@@ -1,0 +1,73 @@
+#include "AMPCore.h"
+#include <cmath>
+#include "hw/HW4.h"
+
+using namespace amp;
+
+class Planar3LinkManipulator : public LinkManipulator2D {
+public:
+    Planar3LinkManipulator()
+        : LinkManipulator2D({0.5, 1.0, 0.5}) {} // Link lengths: a1 = 0.5, a2 = 1.0, a3 = 0.5
+
+    Eigen::Vector2d getJointLocation(const ManipulatorState& state, uint32_t joint_index) const override {
+        if (joint_index >= nLinks()) {
+            std::cerr << "Invalid joint index: " << joint_index << std::endl;
+            return Eigen::Vector2d(0.0, 0.0);
+        }
+
+        Eigen::Vector2d joint_location(0.0, 0.0);
+        for (uint32_t i = 0; i <= joint_index; ++i) {
+            joint_location += Eigen::Vector2d(state[i], 0.0);
+        }
+
+        return joint_location;
+    }
+};
+
+int main(int argc, char** argv) {
+    // Initialize the random number generator
+    RNG::seed(RNG::randiUnbounded());
+
+    // Create a Planar3LinkManipulator instance with specified link lengths
+    Planar3LinkManipulator manipulator;
+
+    // Define joint angles (in radians) with the given values
+    std::vector<double> joint_angles = {M_PI / 6.0, M_PI / 3.0, 7 * M_PI / 4.0}; // theta1, theta2, theta3
+
+    // Calculate joint locations
+    ManipulatorState state = manipulator.calculateConfiguration(joint_angles);
+
+    // Print joint locations
+    std::cout << "Joint Locations:" << std::endl;
+    for (uint32_t i = 0; i < state.size(); ++i) {
+        Eigen::Vector2d joint_location = manipulator.getJointLocation(state, i);
+        std::cout << "Link " << i << ": (" << joint_location.x() << ", " << joint_location.y() << ")" << std::endl;
+    }
+
+    // Access link lengths
+    const std::vector<double>& link_lengths = manipulator.getLinkLengths();
+    std::cout << "Link Lengths: ";
+    for (double length : link_lengths) {
+        std::cout << length << " ";
+    }
+    std::cout << std::endl;
+
+    // Access base location
+    const Eigen::Vector2d& base_location = manipulator.getBaseLocation();
+    std::cout << "Base Location: (" << base_location.x() << ", " << base_location.y() << ")" << std::endl;
+
+    // Calculate and print the reach
+    double manipulator_reach = manipulator.reach();
+    std::cout << "Manipulator Reach: " << manipulator_reach << std::endl;
+
+    // Print the manipulator object
+    manipulator.print("Planar3LinkManipulator");
+
+    // Visualize the manipulator
+    Visualizer::makeFigure(manipulator, state, "green"); // Display the manipulator in green
+
+    // Show the figures (blocking until closed)
+    Visualizer::showFigures();
+
+    return 0;
+}

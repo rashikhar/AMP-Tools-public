@@ -1,0 +1,109 @@
+#include "AMPCore.h"
+#include <iostream>
+#include <vector>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+const double collisionThreshold = 0.1; // Adjust this threshold as needed
+
+// Function to check for collision using Minkowski difference
+bool isCollision(const amp::LinkManipulator2D& manipulator, const amp::Obstacle2D& obstacle) {
+    for (const auto& link : manipulator.links) {
+        for (const auto& vertex : obstacle.vertices) {
+            // Calculate Minkowski difference
+            Eigen::Vector2d minkowskiDiff = link.end() - link.start() - vertex;
+
+            // Check for collision (assuming a certain threshold)
+            if (minkowskiDiff.norm() < collisionThreshold) {
+                return true; // Collision detected
+            }
+        }
+    }
+    return false; // No collision detected
+}
+
+int main() {
+    // User-specified parameters
+    double link1_length = 1.0;
+    double link2_length = 1.0;
+    int num_obstacles = 0; // Number of obstacles (user input)
+
+    std::cout << "Enter the length of the first link: ";
+    std::cin >> link1_length;
+
+    std::cout << "Enter the length of the second link: ";
+    std::cin >> link2_length;
+
+    std::cout << "Enter the number of obstacles: ";
+    std::cin >> num_obstacles;
+
+    // Create a workspace environment
+    amp::Environment2D env;
+    env.x_max = 10.0;
+    env.y_max = 10.0;
+
+    // Create a 2-link manipulator
+    std::vector<double> link_lengths = {link1_length, link2_length};
+    amp::LinkManipulator2D manipulator(link_lengths);
+
+    // Add obstacles to the environment
+    for (int obstacle_index = 0; obstacle_index < num_obstacles; ++obstacle_index) {
+        std::cout << "Enter the number of vertices for obstacle " << obstacle_index + 1 << ": ";
+        int num_vertices = 0;
+        std::cin >> num_vertices;
+
+        std::vector<Eigen::Vector2d> obstacle_vertices;
+        std::cout << "Enter the vertices (x, y) of the obstacle in counterclockwise order:" << std::endl;
+        for (int vertex_index = 0; vertex_index < num_vertices; ++vertex_index) {
+            double x, y;
+            std::cout << "Vertex " << vertex_index + 1 << ": ";
+            std::cin >> x >> y;
+            obstacle_vertices.push_back(Eigen::Vector2d(x, y));
+        }
+
+        // Add the obstacle to the environment
+        amp::Obstacle2D obstacle(obstacle_vertices);
+        env.obstacles.push_back(obstacle);
+    }
+
+    // Create a grid C-space
+    std::size_t grid_resolution = 100; // Fine grid resolution
+    amp::GridCSpace2D cspace(grid_resolution, grid_resolution, 0.0, env.x_max, 0.0, env.y_max);
+
+    // Populate the grid C-space by checking collisions
+    for (std::size_t i = 0; i < grid_resolution; ++i) {
+        for (std::size_t j = 0; j < grid_resolution; ++j) {
+            // Calculate the configuration (x, y) in the grid C-space
+            double x = i * (env.x_max / static_cast<double>(grid_resolution));
+            double y = j * (env.y_max / static_cast<double>(grid_resolution));
+
+            // Set the configuration of the manipulator
+            manipulator.setConfiguration(x, y);
+
+            // Check for collision with each obstacle
+            bool collision = false;
+            for (const auto& obstacle : env.obstacles) {
+                if (isCollision(manipulator, obstacle)) {
+                    collision = true;
+                    break; // No need to check with other obstacles if collision detected
+                }
+            }
+
+            // Set the collision status in the grid C-space
+            cspace.setCollisionStatus(i, j, collision);
+        }
+    }
+
+    // Visualize the workspace with obstacles
+    amp::Visualizer::makeFigure(env);
+
+    // Visualize the C-space with obstacles (positive values and whole space)
+    amp::Visualizer::createAxes(env);
+    amp::Visualizer::createAxes(cspace); // Use the custom axis bounds for C-space visualization
+    amp::Visualizer::makeFigure(cspace);
+
+    // Show the visualization
+    amp::Visualizer::showFigures();
+
+    return 0;
+}

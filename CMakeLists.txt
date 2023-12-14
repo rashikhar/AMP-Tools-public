@@ -117,6 +117,9 @@ if (AMP_BUILD_LIB)
 else()
 
 endif()
+# Add this here vvvvv
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ompl)
+# ^^^^^^^^^^^^^^^^^^
 
 add_subdirectory(scripts)
 add_subdirectory(include/public)

@@ -1,0 +1,91 @@
+#include <iostream>
+#include <vector>
+#include <Eigen/Core>
+#include <cmath>
+
+using namespace std;
+using namespace Eigen;
+
+// Define a struct to represent the manipulator configuration
+struct ManipulatorConfiguration {
+    double theta1;
+    double theta2;
+    double theta3;
+};
+
+// Function to calculate joint angles using inverse kinematics
+vector<ManipulatorConfiguration> calculateIK(double xD, double yD, double L1, double L2, double L3) {
+    vector<ManipulatorConfiguration> configurations;
+
+    // Calculate θ1 using inverse tangent
+    vector<double> theta1_possible = {atan2(yD, xD)};
+
+    for (double theta1 : theta1_possible) {
+        // Calculate the distance from the base to the end effector
+        double r = sqrt(xD * xD + yD * yD);
+
+        // Calculate the cosine of θ3 using the law of cosines
+        double cos_theta3 = (r * r - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+
+        // Check if cos_theta3 is within [-1, 1] (valid range for acos)
+        if (abs(cos_theta3) <= 1) {
+            // Calculate θ3 using the inverse cosine function
+            double theta3_possible = acos(cos_theta3);
+
+            // Calculate θ2 using the law of sines
+            double sin_theta3 = sqrt(1 - cos_theta3 * cos_theta3);
+            double sin_theta2 = (L2 / r) * sin_theta3;
+            double cos_theta2 = (L1 + L2 * cos_theta3) / r;
+
+            // Check if sin_theta2 and cos_theta2 are within [-1, 1] (valid range for asin and acos)
+            if (abs(sin_theta2) <= 1 && abs(cos_theta2) <= 1) {
+                // Calculate θ2 using the inverse sine function
+                double theta2_possible = atan2(sin_theta2, cos_theta2);
+
+                // Create a configuration
+                ManipulatorConfiguration config;
+                config.theta1 = theta1;
+                config.theta2 = theta2_possible;
+                config.theta3 = theta3_possible;
+
+                // Append the configuration to the list
+                configurations.push_back(config);
+            }
+        }
+    }
+
+    return configurations;
+}
+
+int main() {
+    // Desired end effector coordinates
+    double xD, yD;
+    cout << "Enter the desired end effector x-coordinate: ";
+    cin >> xD;
+    cout << "Enter the desired end effector y-coordinate: ";
+    cin >> yD;
+
+    // Lengths of the three links
+    double L1, L2, L3;
+    cout << "Enter the length of Link 1: ";
+    cin >> L1;
+    cout << "Enter the length of Link 2: ";
+    cin >> L2;
+    cout << "Enter the length of Link 3: ";
+    cin >> L3;
+
+    // Calculate inverse kinematics
+    vector<ManipulatorConfiguration> configurations = calculateIK(xD, yD, L1, L2, L3);
+
+    // Display the calculated joint angles
+    cout << "Possible Configurations:" << endl;
+    for (size_t i = 0; i < configurations.size(); ++i) {
+        cout << "Configuration " << i + 1 << ":" << endl;
+        cout << "θ1 = " << configurations[i].theta1 << " radians" << endl;
+        cout << "θ2 = " << configurations[i].theta2 << " radians" << endl;
+        cout << "θ3 = " << configurations[i].theta3 << " radians" << endl;
+        cout << endl;
+    }
+
+    return 0;
+}

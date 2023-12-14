@@ -1,6 +1,8 @@
-#include "AMPCore.h"
+// #include "AMPCore.h"
 
-class MyClass {
-    public:
-        void hereIsAMethod();
-};
+// class MyClass {
+//     public:
+//         void hereIsAMethod();
+        
+
+// };

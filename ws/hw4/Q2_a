@@ -1,0 +1,54 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <Eigen/Core>
+#include "tools/Visualizer.h"
+
+using namespace Eigen;
+using namespace amp;
+
+class Planar3LinkManipulator {
+public:
+    Planar3LinkManipulator(double l1, double l2, double l3) : l1_(l1), l2_(l2), l3_(l3) {}
+
+    void calculateConfiguration(const std::vector<double>& joint_angles) {
+        if (joint_angles.size() != 3) {
+            std::cerr << "Invalid number of joint angles. Expected 3." << std::endl;
+            return;
+        }
+
+        double theta1 = joint_angles[0];
+        double theta2 = joint_angles[1];
+        double theta3 = joint_angles[2];
+
+        double x = l1_ * cos(theta1) + l2_ * cos(theta1 + theta2) + l3_ * cos(theta1 + theta2 + theta3);
+        double y = l1_ * sin(theta1) + l2_ * sin(theta1 + theta2) + l3_ * sin(theta1 + theta2 + theta3);
+
+        std::cout << "End-Effector Position: (" << x << ", " << y << ")" << std::endl;
+
+        // Visualize the robot configuration
+        Visualizer::makeFigure(Vector2d(0.0, 0.0), Vector2d(x, y));
+        Visualizer::showFigures();
+    }
+
+private:
+    double l1_;
+    double l2_;
+    double l3_;
+};
+
+int main() {
+    double l1, l2, l3;
+    std::cout << "Enter link lengths (l1 l2 l3): ";
+    std::cin >> l1 >> l2 >> l3;
+
+    Planar3LinkManipulator manipulator(l1, l2, l3);
+
+    std::vector<double> joint_angles(3);
+    std::cout << "Enter joint angles (in radians, θ1 θ2 θ3): ";
+    std::cin >> joint_angles[0] >> joint_angles[1] >> joint_angles[2];
+
+    manipulator.calculateConfiguration(joint_angles);
+
+    return 0;
+}

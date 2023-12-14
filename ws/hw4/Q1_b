@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+#include <Eigen/Core>
+#include "tools/Environment.h"
+#include "tools/Obstacle.h"
+#include "tools/Visualizer.h"
+#include "tools/ConfigurationSpace.h"
+
+using namespace amp;
+using namespace Eigen;
+
+// Define a function to calculate the C-space vertices using Minkowski difference
+std::vector<Eigen::Vector2d> calculateCSpaceVertices(const std::vector<Eigen::Vector2d>& obstacleVertices, const std::vector<Eigen::Vector2d>& robotVertices) {
+    std::vector<Eigen::Vector2d> cspaceVertices;
+
+        for (const Eigen::Vector2d& obstacleVertex : obstacleVertices) {
+        for (const Eigen::Vector2d& robotVertex : robotVertices)
+        Eigen::Vector2d cspaceVertex = obstacleVertex - robotVertex;
+        cspaceVertices.push_back(cspaceVertex);
+    }
+
+    return cspaceVertices;
+}
+
+int main() {
+    // Define the vertices of the obstacle triangle in workspace W
+    std::vector<Eigen::Vector2d> obstacleVertices = {Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 2.0), Eigen::Vector2d(0.0, 2.0)};
+
+    // Define the local reference point of the robot at its lower-left vertex
+    Eigen::Vector2d robotVertex(0.0, 0.0);
+
+    // Discretize the additional parameter (angle of rotation)
+    const int numAngles = 12;
+    const double angleIncrement = 2.0 * M_PI / numAngles;
+
+    // Create a vector to store the C-space obstacles for different angles
+    std::vector<Environment2D> cspaceObstacles;
+
+    // Calculate the C-space obstacles for each angle
+    for (int i = 0; i < numAngles; ++i) {
+        double angle = i * angleIncrement;
+
+        // Calculate the rotated obstacle vertices
+        std::vector<Eigen::Vector2d> rotatedObstacleVertices;
+        for (const Eigen::Vector2d& vertex : obstacleVertices) {
+            Eigen::Vector2d rotatedVertex;
+            rotatedVertex.x() = vertex.x() * cos(angle) - vertex.y() * sin(angle);
+            rotatedVertex.y() = vertex.x() * sin(angle) + vertex.y() * cos(angle);
+            rotatedObstacleVertices.push_back(rotatedVertex);
+        }
+
+        // Calculate the vertices of the C-space obstacle using Minkowski difference
+        std::vector<Eigen::Vector2d> cspaceVertices = calculateCSpaceVertices(rotatedObstacleVertices, robotVertex);
+
+        // Create an Environment2D to represent the obstacle
+        // Environment2D env;
+        // env.obstacles.push_back(Polygon(rotatedObstacleVertices));
+        vector<Polygon> polygons;
+        Polygon polygon(rotatedObstacleVertices);
+        polygons.push_back(polygon);
+
+            // Create a ConfigurationSpace2D to calculate the C-space
+            //ConfigurationSpace2D cspace(rotatedObstacleVertices);
+
+            // Calculate the C-space using Minkowski difference
+            //cspace.calculate();
+
+            // Store the C-space obstacle in the vector
+            //cspaceObstacles.push_back(env);
+        }
+
+    // Visualize the sequence of C-space obstacles (requires AMP Visualizer)
+    Visualizer::makeFigure(polygon, true);  // Display the C-space obstacles in green
+
+    // Show the figures (blocking until closed)
+    Visualizer::showFigures();
+
+    return 0;
+}

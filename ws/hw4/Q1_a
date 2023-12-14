@@ -1,0 +1,59 @@
+#include <iostream>
+#include <vector>
+#include <Eigen/Core>
+#include "tools/Environment.h"
+#include "tools/Obstacle.h"
+#include "tools/Visualizer.h"
+
+using namespace amp;
+using namespace Eigen;
+
+// Define a function to calculate the C-space vertices using Minkowski difference
+std::vector<Eigen::Vector2d> calculateCSpaceVertices(const std::vector<Eigen::Vector2d>& obstacleVertices, const Eigen::Vector2d& robotVertex) {
+    std::vector<Eigen::Vector2d> cspaceVertices;
+
+    for (const Eigen::Vector2d& obstacleVertex : obstacleVertices) {
+        Eigen::Vector2d cspaceVertex = obstacleVertex - robotVertex;
+        cspaceVertices.push_back(cspaceVertex);
+    }
+
+    return cspaceVertices;
+}
+
+int main() {
+    // Define the vertices of the obstacle triangle in workspace W
+    std::vector<Eigen::Vector2d> obstacleVertices = {Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(1.0, 2.0), Eigen::Vector2d(0.0, 2.0)};
+
+    // Define the local reference point of the robot at its lower-left vertex
+    Eigen::Vector2d robotVertex(0.0, 0.0);
+
+    // Calculate the vertices of the C-space obstacle using Minkowski difference
+    std::vector<Eigen::Vector2d> cspaceVertices = calculateCSpaceVertices(obstacleVertices, robotVertex);
+
+    // Print the C-space vertices
+    std::cout << "Vertices of the C-space obstacle:" << std::endl;
+    for (const Eigen::Vector2d& vertex : cspaceVertices) {
+        std::cout << "(" << vertex.x() << ", " << vertex.y() << ")" << std::endl;
+    }
+
+    // Create an Environment2D to represent the obstacle
+    // Environment2D env;
+    vector<Polygon> polygons;
+    Polygon polygon(obstacleVertices);
+    polygons.push_back(polygon);
+
+    // Create a ConfigurationSpace2D to calculate the C-space
+    // ConfigurationSpace2D cspace(env);
+
+    // Calculate the C-space using Minkowski difference
+    // cspace.calculate();
+
+    // Visualize the obstacle and C-space obstacle
+    Visualizer::makeFigure(polygons);  // Display the obstacle in red
+    // Visualizer::makeFigure(cspace.getPolygonVertices(), true);  // Display the C-space obstacle in green
+
+    // Show the figures (blocking until closed)
+    Visualizer::showFigures();
+
+    return 0;
+}
